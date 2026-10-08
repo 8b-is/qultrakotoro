@@ -1,0 +1,15 @@
+name: ci
+on:
+  push: { branches: [ main ] }
+  pull_request: { branches: [ main ] }
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline-first gate
+        run: bash scripts/check-offline.sh
+      - name: Build
+        run: swift build -v
+      - name: Test
+        run: swift test -v
