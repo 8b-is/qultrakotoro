@@ -12,10 +12,13 @@ let package = Package(
     products: [
         .library(name: "QuantTern", targets: ["QuantTern"]),
         .library(name: "KotoroCore", targets: ["KotoroCore"]),
+        .library(name: "KotoroUI", targets: ["KotoroUI"]),
     ],
     targets: [
         .target(name: "QuantTern"),
         .target(name: "KotoroCore", dependencies: ["QuantTern"]),
+        .target(name: "KotoroUI", dependencies: ["KotoroCore", "QuantTern"], resources: [.process("Resources")]),
         .testTarget(name: "QuantTernTests", dependencies: ["QuantTern", "KotoroCore"]),
+        .testTarget(name: "KotoroUITests", dependencies: ["KotoroUI"]),
     ]
 )

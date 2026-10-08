@@ -10,7 +10,7 @@
 [![CI](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml/badge.svg)](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-b8is?style=flat)](CONTRIBUTING.md)
-[![semver](https://img.shields.io/badge/version-0.1.0-9dff5c)](CHANGELOG.md)
+[![semver](https://img.shields.io/badge/version-0.1.1-9dff5c)](CHANGELOG.md)
 
 </div>
 
@@ -21,6 +21,7 @@
 - [What it is](#what-it-is)
 - [Features](#features)
 - [Install](#install)
+- [Setup guide](#setup-guide)
 - [Usage](#usage)
 - [Architecture](#architecture)
 - [Offline-first](#offline-first)
@@ -57,6 +58,19 @@ Add as a dependency:
 ```swift
 .package(url: "https://github.com/8b-is/qultrakotoro.git", from: "0.1.0")
 ```
+
+## Setup guide
+
+Meet **Onboarding** on first launch: it walks you from a cold install to a
+working, fully on-device session in a few taps.
+
+- **Guided setup:** <https://setup.vaked.dev> — the ELI5, illustrated walkthrough
+  (macOS + iPhone tabs) covering Osaurus, Apple Intelligence, HuggingFace models,
+  Shortcuts, permissions, and offline mode.
+- **In-app onboarding:** the `KotoroUI` target ships `OnboardingView` for the
+  first-install flow and `SettingsView` for everything after that.
+- **The offline gate:** `scripts/check-offline.sh` fails CI if the core ever
+  reaches for the network. Privacy is a compile-time property here.
 
 ## Usage
 
