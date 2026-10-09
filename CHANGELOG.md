@@ -9,6 +9,80 @@ This project adheres to [Semantic Versioning](https://semver.org).
 - `QuantTern.encode` now honors the caller's threshold for all three VAD
   components. Default threshold behavior and packed output remain unchanged.
 
+## [0.6.0] — 2026-10-09
+
+### Added
+- **`kotorocli`** — a command-line tool over the same offline brain:
+  `emotion` (VAD + QuantTern code, `--json`), `noise` (level/peak/zcr/class from
+  an audio file), `transcribe` (on-device file transcription), `live`
+  (mic take with a streaming noise badge), plus `engines` and `locales`.
+
+### Changed
+- `KotoroAppInfo.version` → `0.6.0`.
+
+## [0.5.0] — 2026-10-09
+
+### Added
+- **Noise detection** — `NoiseDetector` / `NoiseProfile` read the soundscape
+  (running RMS in dBFS, peak, zero-crossing rate, and a silence/quiet/ambient/
+  noisy class) straight from the live audio buffers.
+- The live take shows a noise badge (class + level in dB) so you can tell
+  whether a walk take came out clean.
+- `NoiseDetectorTests` pin silence, full-scale, quiet, and reset behaviour.
+
+### Changed
+- `KotoroAppInfo.version` → `0.5.0`.
+
+## [0.4.0] — 2026-10-09
+
+### Added
+- **Multilingual takes** — a `KotoroLocale` picker (English, 日本語, 中文简体,
+  中文繁體 · Taiwan, 臺語) drives `LiveSpeechEngine(localeID:)`, with the chosen
+  language shown on the surface and in Settings. Unknown tags fall back safely.
+- `scripts/fetch-model.sh` now defaults to the **multilingual** model and warns
+  if you pick an English-only `*.en` build.
+
+### Changed
+- `KotoroAppInfo.version` → `0.4.0`.
+
+## [0.3.0] — 2026-10-09
+
+### Added
+- **Live take** — `LiveSpeechEngine` captures the headset mic and transcribes
+  on-device (`SFSpeechRecognizer`, `requiresOnDeviceRecognition`), streaming
+  partials into `TranscribeView`. Headset in, same headset out; iOS routes with
+  a `.playAndRecord` session. Nothing leaves the device.
+- **Long takes** — the duration ceiling is now `KotoroAppInfo.maxTakeSeconds`
+  (30 min, with headroom) with an `mm:ss` / `h:mm:ss` timecode.
+- Microphone + speech-recognition usage strings in the generated `Info.plist`.
+- **`scripts/fetch-model.sh`** — one-time fetch of the best local whisper model
+  (`ggml-large-v3-turbo`) into `./models/`, so the app stays offline at runtime.
+
+### Changed
+- **Pro is the default** for this build (`KotoroAppInfo.defaultPro`), so takes
+  are unlimited and beta manuscripts are unlocked out of the box.
+- `SettingsView` reads the Pro flag from `AppStorage` and exposes a toggle.
+- `KotoroAppInfo.version` → `0.3.0`.
+
+## [0.2.0] — 2026-10-09
+
+### Added
+- **`KotoroMac` app shell** — a runnable macOS SwiftUI app
+  (`swift run KotoroMac`) mounting the shared surface.
+- **`KotoroIOS` app shell** — the iOS SwiftUI entry point over the same surface.
+- **`KotoroUI` working surface** — `KotoroRootView` / `KotoroMainView` /
+  `TranscribeView`: the onboarding gate plus a take that runs the session path
+  (entitlement gate → engine → QuantTern emotion code) and a Pro toggle.
+- **`KotoroCore` offline demo engine** — `TakeAudio` + `OfflineDemoEngine`,
+  a dependency-free `SpeechToText` so the whole path runs with no network.
+- `TakeFlowTests` pinning the engine duration, the emotion tag, and the free gate.
+- **`scripts/build-mac-app.sh`** — assembles `build/qUltraKotoro.app` (Info.plist,
+  `.icns` from the appiconset, ad-hoc signature) with no Xcode project, so the
+  macOS app builds and launches end to end.
+
+### Changed
+- `KotoroAppInfo.version` → `0.2.0`.
+
 ## [0.1.1] — 2026-10-09
 
 ### Added

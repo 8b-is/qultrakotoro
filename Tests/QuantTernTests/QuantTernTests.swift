@@ -98,3 +98,77 @@ final class AccessTests: XCTestCase {
         }
     }
 }
+
+final class TakeFlowTests: XCTestCase {
+
+    func testDemoEngineMeasuresDurationFromPCM() async throws {
+        let engine = OfflineDemoEngine(text: "hello there")
+        let pcm = TakeAudio.take(seconds: 30)
+        XCTAssertEqual(pcm.count, 30 * 16_000)
+        let t = try await engine.transcribe(pcm: pcm, sampleRate: TakeAudio.defaultSampleRate)
+        XCTAssertEqual(t.seconds, 30, accuracy: 0.001)
+        XCTAssertEqual(t.text, "hello there")
+    }
+
+    func testSessionTagsEmotionEndToEnd() async throws {
+        let session = KotoroSession(entitlement: .pro(),
+                                    engine: OfflineDemoEngine(text: "I love this warm good hope"))
+        let t = try await session.transcribe(pcm: TakeAudio.take(seconds: 5),
+                                             sampleRate: TakeAudio.defaultSampleRate,
+                                             seconds: 5)
+        let vad = try XCTUnwrap(t.vad)
+        XCTAssertGreaterThan(vad.valence, 0.5)
+        XCTAssertTrue(QuantTern.encode(vad).hex.hasPrefix("qt:"))
+    }
+
+    func testSessionGatesBeforeEngineRuns() async {
+        let session = KotoroSession(entitlement: .free,
+                                    engine: OfflineDemoEngine(text: "too long"))
+        do {
+            _ = try await session.transcribe(pcm: TakeAudio.take(seconds: 90),
+                                             sampleRate: TakeAudio.defaultSampleRate,
+                                             seconds: 90)
+            XCTFail("expected the free gate to reject a 90 s take")
+        } catch let error as KotoroError {
+            XCTAssertEqual(error, .freeLimitReached(limit: 60))
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+    }
+}
+
+final class NoiseDetectorTests: XCTestCase {
+
+    private func sine(amplitude: Float, count: Int = 4096) -> [Float] {
+        (0..<count).map { amplitude * Float(sin(2 * Double.pi * 440 * Double($0) / 16_000)) }
+    }
+
+    func testSilenceClassifiesSilent() {
+        var detector = NoiseDetector()
+        let profile = detector.ingest([Float](repeating: 0, count: 2048))
+        XCTAssertEqual(profile.classification, .silence)
+        XCTAssertEqual(profile.levelDBFS, -80, accuracy: 0.001)
+    }
+
+    func testFullScaleToneIsNoisy() {
+        var detector = NoiseDetector()
+        for _ in 0..<30 { _ = detector.ingest(sine(amplitude: 1.0)) }
+        // full-scale sine RMS ≈ 0.707 → ≈ −3 dBFS
+        XCTAssertEqual(detector.profile.levelDBFS, -3.0, accuracy: 1.0)
+        XCTAssertEqual(detector.profile.classification, .noisy)
+        XCTAssertEqual(detector.profile.peakDBFS, 0, accuracy: 0.5)
+    }
+
+    func testQuietToneIsQuiet() {
+        var detector = NoiseDetector()
+        for _ in 0..<30 { _ = detector.ingest(sine(amplitude: 0.02)) }
+        XCTAssertEqual(detector.profile.classification, .quiet)
+    }
+
+    func testResetClearsState() {
+        var detector = NoiseDetector()
+        for _ in 0..<10 { _ = detector.ingest(sine(amplitude: 1.0)) }
+        detector.reset()
+        XCTAssertEqual(detector.profile, .silence)
+    }
+}

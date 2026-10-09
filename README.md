@@ -10,7 +10,7 @@
 [![CI](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml/badge.svg)](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-b8is?style=flat)](CONTRIBUTING.md)
-[![semver](https://img.shields.io/badge/version-0.1.1-9dff5c)](CHANGELOG.md)
+[![semver](https://img.shields.io/badge/version-0.6.0-9dff5c)](CHANGELOG.md)
 
 </div>
 
@@ -51,6 +51,10 @@ git clone https://github.com/8b-is/qultrakotoro.git
 cd qultrakotoro
 swift build
 swift test
+swift run KotoroMac              # run the macOS app directly
+scripts/build-mac-app.sh        # ...or a real .app bundle
+open build/qUltraKotoro.app
+swift run kotorocli help        # the command-line tool
 ```
 
 Add as a dependency:
@@ -79,12 +83,58 @@ import KotoroCore
 // see Sources/KotoroCore for the public surface
 ```
 
+**Live takes.** In the app, hit *Live take* to capture the headset mic and
+transcribe on-device as you go — headset in, same headset out. Tap *Stop* to
+keep the transcript and its QuantTern code. Pro (the default in this build)
+removes the 60 s ceiling; takes run up to `KotoroAppInfo.maxTakeSeconds`. A
+**noise badge** shows the room's level (silence / quiet / ambient / noisy, in
+dB) so you can tell whether a take came out clean.
+
+## Models
+
+The default engine is Apple's built-in on-device recogniser — **no download**.
+For maximum quality with the whisper.cpp engine, fetch the best **multilingual**
+model once (this is the only step that ever touches the network, and you run it
+yourself). One download covers English, Japanese, Chinese (Simplified and
+Traditional/Taiwan) and best-effort Taiwanese Hokkien:
+
+```bash
+scripts/fetch-model.sh          # ggml-large-v3-turbo, into ./models/
+```
+
+The app keeps its offline-first promise: recognition is on-device, and no audio
+or text ever leaves the machine.
+
+## Command line
+
+`kotorocli` is the same brain without the window — off-device audio files, emotion
+tagging at the prompt, and a live mic take. It is offline-first too.
+
+```bash
+swift run kotorocli emotion "i love this warm beautiful hope" --json
+swift run kotorocli noise recording.wav            # level, peak, zcr, class
+swift run kotorocli transcribe recording.wav --locale ja-JP
+swift run kotorocli live 30 --locale zh-TW         # 30 s headset take
+```
+
+| Command | What it does |
+|---------|--------------|
+| `emotion <text>` | VAD + QuantTern code (`--json` for machines) |
+| `noise <audio>` | noise profile: level, peak, zero-crossing rate, class |
+| `transcribe <audio>` | on-device file transcription + emotion code |
+| `live [seconds]` | mic take, streaming text and a live noise badge |
+| `engines` · `locales` | list the STT engines and language tags |
+
 ## Architecture
 
 ```
 qultrakotoro/
 ├── Package.swift
 ├── Sources/KotoroCore/          # the library (offline-first core)
+├── Sources/KotoroUI/            # SwiftUI: Onboarding, Transcribe, Settings
+├── Sources/KotoroMac/           # macOS app shell (swift run KotoroMac)
+├── Sources/KotoroIOS/           # iOS app shell (Xcode / SwiftPM iOS build)
+├── Sources/KotoroCLI/           # command-line tool (swift run kotorocli)
 ├── Tests/                  # swift test
 ├── scripts/check-offline.sh# the offline-first gate (runs in CI)
 └── .github/                # templates, CODEOWNERS, CI
@@ -108,8 +158,8 @@ See [PRIVACY.md](PRIVACY.md). In one line: **your data never leaves the device.*
 
 ## Versioning
 
-[Semantic Versioning](https://semver.org). The current version is **0.1.0** — see
-[CHANGELOG.md](CHANGELOG.md). Releases are tagged `v0.1.0`.
+[Semantic Versioning](https://semver.org). The current version is **0.6.0** — see
+[CHANGELOG.md](CHANGELOG.md). Releases are tagged `v0.6.0`.
 
 ## Roadmap
 

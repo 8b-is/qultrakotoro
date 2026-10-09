@@ -107,3 +107,30 @@ public struct EmotionTagger: Sendable {
 
     private func clamp(_ x: Float) -> Float { max(-1, min(1, x)) }
 }
+
+// MARK: - Offline demo engine
+
+/// Synthesizes the PCM a take would carry. Silence is enough for the contract:
+/// the engine only needs the sample count to recover the duration. No network,
+/// no microphone — this is what the app shells use until a device engine lands.
+public enum TakeAudio {
+    public static let defaultSampleRate: Double = 16_000
+
+    public static func take(seconds: Double, sampleRate: Double = defaultSampleRate) -> [Float] {
+        [Float](repeating: 0, count: max(0, Int(seconds * sampleRate)))
+    }
+}
+
+/// A dependency-free `SpeechToText` used by the app shells and tests. It returns
+/// the text it was handed and reports the duration it measured from the PCM, so
+/// the whole session path (gate → transcribe → emotion code) runs offline.
+public struct OfflineDemoEngine: SpeechToText {
+    public let text: String
+
+    public init(text: String = "") { self.text = text }
+
+    public func transcribe(pcm: [Float], sampleRate: Double) async throws -> Transcript {
+        let seconds = sampleRate > 0 ? Double(pcm.count) / sampleRate : 0
+        return Transcript(text: text, seconds: seconds)
+    }
+}

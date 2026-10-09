@@ -13,11 +13,17 @@ let package = Package(
         .library(name: "QuantTern", targets: ["QuantTern"]),
         .library(name: "KotoroCore", targets: ["KotoroCore"]),
         .library(name: "KotoroUI", targets: ["KotoroUI"]),
+        .executable(name: "KotoroMac", targets: ["KotoroMac"]),
+        .executable(name: "KotoroIOS", targets: ["KotoroIOS"]),
+        .executable(name: "kotorocli", targets: ["KotoroCLI"]),
     ],
     targets: [
         .target(name: "QuantTern"),
         .target(name: "KotoroCore", dependencies: ["QuantTern"]),
         .target(name: "KotoroUI", dependencies: ["KotoroCore", "QuantTern"], resources: [.process("Resources")]),
+        .executableTarget(name: "KotoroMac", dependencies: ["KotoroUI", "KotoroCore", "QuantTern"]),
+        .executableTarget(name: "KotoroIOS", dependencies: ["KotoroUI", "KotoroCore", "QuantTern"]),
+        .executableTarget(name: "KotoroCLI", dependencies: ["KotoroCore", "QuantTern"]),
         .testTarget(name: "QuantTernTests", dependencies: ["QuantTern", "KotoroCore"]),
         .testTarget(name: "KotoroUITests", dependencies: ["KotoroUI"]),
     ]
