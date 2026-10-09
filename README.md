@@ -10,7 +10,7 @@
 [![CI](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml/badge.svg)](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-b8is?style=flat)](CONTRIBUTING.md)
-[![semver](https://img.shields.io/badge/version-0.3.0-9dff5c)](CHANGELOG.md)
+[![semver](https://img.shields.io/badge/version-0.4.0-9dff5c)](CHANGELOG.md)
 
 </div>
 
@@ -90,8 +90,10 @@ removes the 60 s ceiling; takes run up to `KotoroAppInfo.maxTakeSeconds`.
 ## Models
 
 The default engine is Apple's built-in on-device recogniser — **no download**.
-For maximum quality with the whisper.cpp engine, fetch the best local model once
-(this is the only step that ever touches the network, and you run it yourself):
+For maximum quality with the whisper.cpp engine, fetch the best **multilingual**
+model once (this is the only step that ever touches the network, and you run it
+yourself). One download covers English, Japanese, Chinese (Simplified and
+Traditional/Taiwan) and best-effort Taiwanese Hokkien:
 
 ```bash
 scripts/fetch-model.sh          # ggml-large-v3-turbo, into ./models/
@@ -132,8 +134,8 @@ See [PRIVACY.md](PRIVACY.md). In one line: **your data never leaves the device.*
 
 ## Versioning
 
-[Semantic Versioning](https://semver.org). The current version is **0.3.0** — see
-[CHANGELOG.md](CHANGELOG.md). Releases are tagged `v0.3.0`.
+[Semantic Versioning](https://semver.org). The current version is **0.4.0** — see
+[CHANGELOG.md](CHANGELOG.md). Releases are tagged `v0.4.0`.
 
 ## Roadmap
 

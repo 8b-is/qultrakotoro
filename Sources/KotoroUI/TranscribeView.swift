@@ -44,6 +44,7 @@ public struct KotoroMainView: View {
 ///   (a walk in Tokyo, headphones in and out).
 public struct TranscribeView: View {
     @AppStorage(KotoroKeys.engineID) private var engineID = "apple"
+    @AppStorage(KotoroKeys.localeID) private var localeID = "en-US"
     @AppStorage(KotoroKeys.showEmotionCode) private var showEmotionCode = true
     @AppStorage(KotoroKeys.proUnlocked) private var proUnlocked = KotoroAppInfo.defaultPro
 
@@ -94,7 +95,7 @@ public struct TranscribeView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(KotoroAppInfo.name).font(.title2.bold())
-            Text("On-device take · \(KotoroEngineChoice.named(engineID).name)")
+            Text("On-device take · \(KotoroEngineChoice.named(engineID).name) · \(KotoroLocale.named(localeID).name)")
                 .font(.callout).foregroundStyle(.secondary)
         }
     }
@@ -109,6 +110,14 @@ public struct TranscribeView: View {
                     .foregroundStyle(entitlement.allows(seconds: seconds) ? Color.secondary : Color.red)
             }
             Slider(value: $seconds, in: 0...KotoroAppInfo.maxTakeSeconds, step: 30)
+
+            Picker("Language", selection: $localeID) {
+                ForEach(KotoroLocale.all) { locale in
+                    Text(locale.name).tag(locale.id)
+                }
+            }
+            Text(KotoroLocale.named(localeID).detail)
+                .font(.caption).foregroundStyle(.secondary)
 
             Toggle("Pro unlocked", isOn: $proUnlocked)
             Text(entitlement.isPro ? "Pro — unlimited takes + beta manuscripts."
@@ -210,13 +219,13 @@ public struct TranscribeView: View {
             return
         }
 
-        guard LiveSpeechEngine.available else {
-            errorText = "On-device speech recognition is unavailable on this device."
+        guard LiveSpeechEngine.available(localeID: localeID) else {
+            errorText = "On-device speech recognition is unavailable for \(KotoroLocale.named(localeID).name)."
             return
         }
         _ = await LiveSpeechEngine.requestPermissions()
 
-        let engine = LiveSpeechEngine()
+        let engine = LiveSpeechEngine(localeID: localeID)
         engine.onUpdate = { update in
             Task { @MainActor in
                 liveText = update.text

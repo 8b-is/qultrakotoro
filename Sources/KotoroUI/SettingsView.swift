@@ -5,6 +5,7 @@ import QuantTern
 /// The epic settings surface: engine, emotion, access, privacy, sync, about.
 public struct SettingsView: View {
     @AppStorage(KotoroKeys.engineID) private var engineID = "apple"
+    @AppStorage(KotoroKeys.localeID) private var localeID = "en-US"
     @AppStorage(KotoroKeys.showEmotionCode) private var showEmotionCode = true
     @AppStorage(KotoroKeys.minTakeSeconds) private var minTakeSeconds = 0.0
     @AppStorage(KotoroKeys.offlineOnly) private var offlineOnly = true
@@ -31,6 +32,13 @@ public struct SettingsView: View {
                     }
                 }
                 Text(KotoroEngineChoice.named(engineID).detail)
+                    .font(.caption).foregroundStyle(.secondary)
+                Picker("Language", selection: $localeID) {
+                    ForEach(KotoroLocale.all) { locale in
+                        Text(locale.name).tag(locale.id)
+                    }
+                }
+                Text(KotoroLocale.named(localeID).detail)
                     .font(.caption).foregroundStyle(.secondary)
                 if engineID == "osaurus" {
                     TextField("Osaurus endpoint", text: $osaurusEndpoint)

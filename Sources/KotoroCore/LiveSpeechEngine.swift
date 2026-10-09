@@ -14,7 +14,8 @@ public final class LiveSpeechEngine: NSObject {
     }
 
     private let engine = AVAudioEngine()
-    private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private let localeID: String
+    private lazy var recognizer = SFSpeechRecognizer(locale: Locale(identifier: localeID))
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var startedAt: Date?
@@ -25,10 +26,13 @@ public final class LiveSpeechEngine: NSObject {
     public var onUpdate: (@Sendable (Update) -> Void)?
     public private(set) var isRunning = false
 
-    public override init() { super.init() }
+    public init(localeID: String = "en-US") {
+        self.localeID = localeID
+        super.init()
+    }
 
-    public static var available: Bool {
-        SFSpeechRecognizer(locale: Locale(identifier: "en-US"))?.isAvailable ?? false
+    public static func available(localeID: String = "en-US") -> Bool {
+        SFSpeechRecognizer(locale: Locale(identifier: localeID))?.isAvailable ?? false
     }
 
     /// Ask for speech + microphone access. Returns true only if both are granted.
@@ -67,7 +71,7 @@ public final class LiveSpeechEngine: NSObject {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        request.requiresOnDeviceRecognition = Self.available
+        request.requiresOnDeviceRecognition = recognizer?.supportsOnDeviceRecognition ?? false
         self.request = request
 
         let input = engine.inputNode

@@ -24,7 +24,17 @@ final class KotoroUITests: XCTestCase {
 
     func testAppInfoURLsParse() {
         XCTAssertEqual(KotoroAppInfo.setupGuide.absoluteString, KotoroAppInfo.setupGuideURL)
-        XCTAssertEqual(KotoroAppInfo.version, "0.3.0")
+        XCTAssertEqual(KotoroAppInfo.version, "0.4.0")
+    }
+
+    func testLocalesCoverGoalLanguages() {
+        let ids = Set(KotoroLocale.all.map(\.id))
+        for tag in ["en-US", "ja-JP", "zh-CN", "zh-TW", "nan-TW"] {
+            XCTAssertTrue(ids.contains(tag), "missing locale \(tag)")
+        }
+        XCTAssertEqual(KotoroLocale.named("ja-JP").name, "日本語")
+        // Unknown tags fall back to the first locale rather than crashing.
+        XCTAssertEqual(KotoroLocale.named("xx-XX").id, KotoroLocale.all[0].id)
     }
 
     func testDefaultIsProAndAllowsLongTakes() {

@@ -4,7 +4,7 @@ import Foundation
 /// values are testable and identical across iOS and macOS.
 public enum KotoroAppInfo {
     public static let name = "qUltraKotoro"
-    public static let version = "0.3.0"
+    public static let version = "0.4.0"
 
     /// Personal build default: start in Pro (unlimited takes + beta manuscripts).
     public static let defaultPro = true
@@ -36,6 +36,7 @@ public enum KotoroAppInfo {
 public enum KotoroKeys {
     public static let didOnboard = "kotoro.didOnboard"
     public static let engineID = "kotoro.engineID"
+    public static let localeID = "kotoro.localeID"
     public static let showEmotionCode = "kotoro.showEmotionCode"
     public static let minTakeSeconds = "kotoro.minTakeSeconds"
     public static let offlineOnly = "kotoro.offlineOnly"
@@ -68,6 +69,30 @@ public struct KotoroEngineChoice: Identifiable, Hashable, Sendable {
     ]
 
     public static func named(_ id: String) -> KotoroEngineChoice {
+        all.first { $0.id == id } ?? all[0]
+    }
+}
+
+/// The spoken languages the recognizer can target. All are offline; the
+/// multilingual model covers them without swapping downloads.
+public struct KotoroLocale: Identifiable, Hashable, Sendable {
+    public let id: String        // BCP-47 language tag
+    public let name: String
+    public let detail: String
+
+    public init(id: String, name: String, detail: String) {
+        self.id = id; self.name = name; self.detail = detail
+    }
+
+    public static let all: [KotoroLocale] = [
+        .init(id: "en-US", name: "English", detail: "English (United States)"),
+        .init(id: "ja-JP", name: "日本語", detail: "Japanese"),
+        .init(id: "zh-CN", name: "中文（简体）", detail: "Chinese (Simplified)"),
+        .init(id: "zh-TW", name: "中文（繁體）", detail: "Chinese (Traditional · Taiwan)"),
+        .init(id: "nan-TW", name: "臺語", detail: "Taiwanese Hokkien (best-effort)"),
+    ]
+
+    public static func named(_ id: String) -> KotoroLocale {
         all.first { $0.id == id } ?? all[0]
     }
 }

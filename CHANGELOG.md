@@ -3,6 +3,18 @@
 All notable changes to qUltraKotoro are documented here.
 This project adheres to [Semantic Versioning](https://semver.org).
 
+## [0.4.0] — 2026-10-09
+
+### Added
+- **Multilingual takes** — a `KotoroLocale` picker (English, 日本語, 中文简体,
+  中文繁體 · Taiwan, 臺語) drives `LiveSpeechEngine(localeID:)`, with the chosen
+  language shown on the surface and in Settings. Unknown tags fall back safely.
+- `scripts/fetch-model.sh` now defaults to the **multilingual** model and warns
+  if you pick an English-only `*.en` build.
+
+### Changed
+- `KotoroAppInfo.version` → `0.4.0`.
+
 ## [0.3.0] — 2026-10-09
 
 ### Added
