@@ -3,6 +3,25 @@
 All notable changes to qUltraKotoro are documented here.
 This project adheres to [Semantic Versioning](https://semver.org).
 
+## [0.3.0] — 2026-10-09
+
+### Added
+- **Live take** — `LiveSpeechEngine` captures the headset mic and transcribes
+  on-device (`SFSpeechRecognizer`, `requiresOnDeviceRecognition`), streaming
+  partials into `TranscribeView`. Headset in, same headset out; iOS routes with
+  a `.playAndRecord` session. Nothing leaves the device.
+- **Long takes** — the duration ceiling is now `KotoroAppInfo.maxTakeSeconds`
+  (30 min, with headroom) with an `mm:ss` / `h:mm:ss` timecode.
+- Microphone + speech-recognition usage strings in the generated `Info.plist`.
+- **`scripts/fetch-model.sh`** — one-time fetch of the best local whisper model
+  (`ggml-large-v3-turbo`) into `./models/`, so the app stays offline at runtime.
+
+### Changed
+- **Pro is the default** for this build (`KotoroAppInfo.defaultPro`), so takes
+  are unlimited and beta manuscripts are unlocked out of the box.
+- `SettingsView` reads the Pro flag from `AppStorage` and exposes a toggle.
+- `KotoroAppInfo.version` → `0.3.0`.
+
 ## [0.2.0] — 2026-10-09
 
 ### Added

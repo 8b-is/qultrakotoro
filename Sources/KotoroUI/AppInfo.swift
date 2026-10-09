@@ -4,7 +4,14 @@ import Foundation
 /// values are testable and identical across iOS and macOS.
 public enum KotoroAppInfo {
     public static let name = "qUltraKotoro"
-    public static let version = "0.2.0"
+    public static let version = "0.3.0"
+
+    /// Personal build default: start in Pro (unlimited takes + beta manuscripts).
+    public static let defaultPro = true
+
+    /// Longest take the UI exposes. Pro is unlimited by design; this is just the
+    /// slider ceiling (a 30-minute walk, with headroom).
+    public static let maxTakeSeconds: Double = 1800
 
     public static let landingURL = "https://kotoro.vaked.dev"
     public static let setupGuideURL = "https://setup.vaked.dev"
@@ -13,6 +20,15 @@ public enum KotoroAppInfo {
     public static var landing: URL { URL(string: landingURL)! }
     public static var setupGuide: URL { URL(string: setupGuideURL)! }
     public static var source: URL { URL(string: sourceURL)! }
+
+    /// `mm:ss` (or `h:mm:ss` past an hour) for a take duration.
+    public static func timecode(_ seconds: Double) -> String {
+        let total = Int(seconds.rounded())
+        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
+        return h > 0
+            ? String(format: "%d:%02d:%02d", h, m, s)
+            : String(format: "%d:%02d", m, s)
+    }
 }
 
 /// UserDefaults keys shared between onboarding and settings so a choice made
@@ -44,7 +60,7 @@ public struct KotoroEngineChoice: Identifiable, Hashable, Sendable {
         .init(id: "apple", name: "Apple on-device speech",
               detail: "Free, built in, zero setup. Great default.", symbol: "waveform"),
         .init(id: "whisper.cpp", name: "whisper.cpp (local)",
-              detail: "Bring a GGML model; fully offline.", symbol: "cpu"),
+              detail: "Run scripts/fetch-model.sh for the best local model; fully offline.", symbol: "cpu"),
         .init(id: "parakeet", name: "Parakeet (local)",
               detail: "Fast multilingual on-device transcription.", symbol: "bird"),
         .init(id: "osaurus", name: "Osaurus (macOS, localhost)",

@@ -10,7 +10,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 CONFIG="${1:-release}"
-VERSION="0.2.0"
+VERSION="0.3.0"
 PRODUCT="KotoroMac"
 APP_NAME="qUltraKotoro"
 BUNDLE_ID="dev.vaked.qultrakotoro"
@@ -63,6 +63,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key><string>$MIN_MACOS</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
+  <key>NSMicrophoneUsageDescription</key><string>qUltraKotoro records your take from the microphone for on-device transcription. Audio never leaves the device.</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>qUltraKotoro transcribes your take on-device. No audio or text is sent anywhere.</string>
 </dict>
 </plist>
 PLIST

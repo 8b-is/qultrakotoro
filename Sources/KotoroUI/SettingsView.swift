@@ -12,14 +12,15 @@ public struct SettingsView: View {
     @AppStorage(KotoroKeys.iCloudSync) private var iCloudSync = false
     @AppStorage(KotoroKeys.betaManuscripts) private var betaManuscripts = false
 
-    private let entitlement: Entitlement
     private let sample: String
 
-    public init(entitlement: Entitlement = .free,
-                sample: String = "wow this is beautiful, thanks!") {
-        self.entitlement = entitlement
+    @AppStorage(KotoroKeys.proUnlocked) private var proUnlocked = KotoroAppInfo.defaultPro
+
+    public init(sample: String = "wow this is beautiful, thanks!") {
         self.sample = sample
     }
+
+    private var entitlement: Entitlement { proUnlocked ? .pro() : .free }
 
     public var body: some View {
         Form {
@@ -70,6 +71,7 @@ public struct SettingsView: View {
                 if !entitlement.isPro {
                     Link("Upgrade — €4.20 / month", destination: KotoroAppInfo.landing)
                 }
+                Toggle("Pro unlocked", isOn: $proUnlocked)
                 Toggle("Beta / WIP anime manuscripts", isOn: $betaManuscripts)
                     .disabled(!entitlement.isPro)
             }

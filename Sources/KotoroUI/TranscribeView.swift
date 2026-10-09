@@ -19,8 +19,8 @@ public struct KotoroRootView: View {
     }
 }
 
-/// The signed-in surface: transcribe a take, read its QuantTern code, and reach
-/// settings. Offline-first — it drives whatever on-device engine the shell has.
+/// The working surface: transcribe a take, read its QuantTern code, and reach
+/// settings. Offline-first — it drives the on-device engine, never the network.
 public struct KotoroMainView: View {
     public init() {}
 
@@ -31,52 +31,64 @@ public struct KotoroMainView: View {
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
-        .frame(minWidth: 520, minHeight: 560)
+        .frame(minWidth: 520, minHeight: 600)
     }
 }
 
 /// One take, end to end: gate the duration against the entitlement, run the
 /// engine, tag the transcript, and show the emotional fingerprint.
+///
+/// Two modes:
+/// - **Demo** — type a take, pick a duration, run the offline engine.
+/// - **Live** — capture the headset mic and transcribe on-device as you go
+///   (a walk in Tokyo, headphones in and out).
 public struct TranscribeView: View {
     @AppStorage(KotoroKeys.engineID) private var engineID = "apple"
     @AppStorage(KotoroKeys.showEmotionCode) private var showEmotionCode = true
-    @AppStorage(KotoroKeys.minTakeSeconds) private var minTakeSeconds = 0.0
-    @AppStorage(KotoroKeys.proUnlocked) private var proUnlocked = false
+    @AppStorage(KotoroKeys.proUnlocked) private var proUnlocked = KotoroAppInfo.defaultPro
 
     @State private var take = "wow this is beautiful, thanks!"
-    @State private var seconds = 30.0
+    @State private var seconds = 60.0
     @State private var transcript: Transcript?
     @State private var errorText: String?
+
+    @State private var liveEngine: LiveSpeechEngine?
+    @State private var liveRunning = false
+    @State private var liveText = ""
+    @State private var liveSeconds = 0.0
 
     public init() {}
 
     private var entitlement: Entitlement { proUnlocked ? .pro() : .free }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            header
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                header
 
-            TextEditor(text: $take)
-                .font(.body)
-                .frame(minHeight: 96)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.quaternary))
+                TextEditor(text: $take)
+                    .font(.body)
+                    .frame(minHeight: 84)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(.quaternary))
 
-            controls
+                controls
+                liveControls
 
-            Button {
-                Task { await runTake() }
-            } label: {
-                Label("Take", systemImage: "mic.circle.fill")
-                    .frame(maxWidth: .infinity)
+                Button {
+                    Task { await runTake() }
+                } label: {
+                    Label("Take", systemImage: "mic.circle.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(liveRunning)
+
+                result
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-
-            result
-            Spacer(minLength: 0)
+            .padding(20)
+            .frame(maxWidth: 560, alignment: .leading)
         }
-        .padding(20)
-        .frame(maxWidth: 560, alignment: .leading)
     }
 
     private var header: some View {
@@ -92,16 +104,48 @@ public struct TranscribeView: View {
             HStack {
                 Text("Duration")
                 Spacer()
-                Text(String(format: "%.0f s", seconds))
+                Text(KotoroAppInfo.timecode(seconds))
                     .font(.system(.body, design: .monospaced))
                     .foregroundStyle(entitlement.allows(seconds: seconds) ? Color.secondary : Color.red)
             }
-            Slider(value: $seconds, in: 0...120, step: 5)
+            Slider(value: $seconds, in: 0...KotoroAppInfo.maxTakeSeconds, step: 30)
 
             Toggle("Pro unlocked", isOn: $proUnlocked)
             Text(entitlement.isPro ? "Pro — unlimited takes + beta manuscripts."
                                    : "Free — up to 60 s per take.")
                 .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var liveControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Button {
+                    Task { await toggleLive() }
+                } label: {
+                    Label(liveRunning ? "Stop" : "Live take",
+                          systemImage: liveRunning ? "stop.circle.fill" : "record.circle")
+                }
+                .buttonStyle(.bordered)
+                .tint(liveRunning ? .red : .accentColor)
+
+                if liveRunning || !liveText.isEmpty {
+                    Text(KotoroAppInfo.timecode(liveSeconds))
+                        .font(.system(.callout, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            Text("Headset mic in · same headset out. Recognition runs on-device; audio never leaves RAM.")
+                .font(.caption).foregroundStyle(.secondary)
+            if !liveText.isEmpty {
+                Text(liveText)
+                    .font(.body)
+                    .textSelection(.enabled)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(.quaternary.opacity(0.4)))
+            }
         }
     }
 
@@ -150,6 +194,45 @@ public struct TranscribeView: View {
         } catch {
             transcript = nil
             errorText = "Take failed: \(error)"
+        }
+    }
+
+    private func toggleLive() async {
+        if liveRunning {
+            let finished = await liveEngine?.stop()
+            liveRunning = false
+            liveEngine = nil
+            if var t = finished {
+                t.vad = EmotionTagger().vad(for: t.text)
+                transcript = t
+                errorText = nil
+            }
+            return
+        }
+
+        guard LiveSpeechEngine.available else {
+            errorText = "On-device speech recognition is unavailable on this device."
+            return
+        }
+        _ = await LiveSpeechEngine.requestPermissions()
+
+        let engine = LiveSpeechEngine()
+        engine.onUpdate = { update in
+            Task { @MainActor in
+                liveText = update.text
+                liveSeconds = update.seconds
+            }
+        }
+        do {
+            try engine.start()
+            liveEngine = engine
+            liveRunning = true
+            liveText = ""
+            liveSeconds = 0
+            transcript = nil
+            errorText = nil
+        } catch {
+            errorText = "Live capture failed: \(error)"
         }
     }
 }

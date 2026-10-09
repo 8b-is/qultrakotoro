@@ -24,6 +24,18 @@ final class KotoroUITests: XCTestCase {
 
     func testAppInfoURLsParse() {
         XCTAssertEqual(KotoroAppInfo.setupGuide.absoluteString, KotoroAppInfo.setupGuideURL)
-        XCTAssertEqual(KotoroAppInfo.version, "0.2.0")
+        XCTAssertEqual(KotoroAppInfo.version, "0.3.0")
+    }
+
+    func testDefaultIsProAndAllowsLongTakes() {
+        XCTAssertTrue(KotoroAppInfo.defaultPro)
+        XCTAssertGreaterThanOrEqual(KotoroAppInfo.maxTakeSeconds, 1800)
+    }
+
+    func testTimecodeFormatting() {
+        XCTAssertEqual(KotoroAppInfo.timecode(0), "0:00")
+        XCTAssertEqual(KotoroAppInfo.timecode(60), "1:00")
+        XCTAssertEqual(KotoroAppInfo.timecode(1815), "30:15")
+        XCTAssertEqual(KotoroAppInfo.timecode(3661), "1:01:01")
     }
 }
