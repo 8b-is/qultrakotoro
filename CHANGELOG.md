@@ -3,6 +3,12 @@
 All notable changes to qUltraKotoro are documented here.
 This project adheres to [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Fixed
+- `QuantTern.encode` now honors the caller's threshold for all three VAD
+  components. Default threshold behavior and packed output remain unchanged.
+
 ## [0.1.1] — 2026-10-09
 
 ### Added
