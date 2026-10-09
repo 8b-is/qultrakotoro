@@ -24,6 +24,6 @@ final class KotoroUITests: XCTestCase {
 
     func testAppInfoURLsParse() {
         XCTAssertEqual(KotoroAppInfo.setupGuide.absoluteString, KotoroAppInfo.setupGuideURL)
-        XCTAssertEqual(KotoroAppInfo.version, "0.1.1")
+        XCTAssertEqual(KotoroAppInfo.version, "0.2.0")
     }
 }

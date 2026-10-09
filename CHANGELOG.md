@@ -3,6 +3,22 @@
 All notable changes to qUltraKotoro are documented here.
 This project adheres to [Semantic Versioning](https://semver.org).
 
+## [0.2.0] — 2026-10-09
+
+### Added
+- **`KotoroMac` app shell** — a runnable macOS SwiftUI app
+  (`swift run KotoroMac`) mounting the shared surface.
+- **`KotoroIOS` app shell** — the iOS SwiftUI entry point over the same surface.
+- **`KotoroUI` working surface** — `KotoroRootView` / `KotoroMainView` /
+  `TranscribeView`: the onboarding gate plus a take that runs the session path
+  (entitlement gate → engine → QuantTern emotion code) and a Pro toggle.
+- **`KotoroCore` offline demo engine** — `TakeAudio` + `OfflineDemoEngine`,
+  a dependency-free `SpeechToText` so the whole path runs with no network.
+- `TakeFlowTests` pinning the engine duration, the emotion tag, and the free gate.
+
+### Changed
+- `KotoroAppInfo.version` → `0.2.0`.
+
 ## [0.1.1] — 2026-10-09
 
 ### Added

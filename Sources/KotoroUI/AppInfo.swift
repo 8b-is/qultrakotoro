@@ -4,7 +4,7 @@ import Foundation
 /// values are testable and identical across iOS and macOS.
 public enum KotoroAppInfo {
     public static let name = "qUltraKotoro"
-    public static let version = "0.1.1"
+    public static let version = "0.2.0"
 
     public static let landingURL = "https://kotoro.vaked.dev"
     public static let setupGuideURL = "https://setup.vaked.dev"
@@ -26,6 +26,7 @@ public enum KotoroKeys {
     public static let osaurusEndpoint = "kotoro.osaurusEndpoint"
     public static let iCloudSync = "kotoro.iCloudSync"
     public static let betaManuscripts = "kotoro.betaManuscripts"
+    public static let proUnlocked = "kotoro.proUnlocked"
 }
 
 /// The local STT engines the app can point at. All on device.

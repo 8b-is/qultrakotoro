@@ -10,7 +10,7 @@
 [![CI](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml/badge.svg)](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-b8is?style=flat)](CONTRIBUTING.md)
-[![semver](https://img.shields.io/badge/version-0.1.1-9dff5c)](CHANGELOG.md)
+[![semver](https://img.shields.io/badge/version-0.2.0-9dff5c)](CHANGELOG.md)
 
 </div>
 
@@ -51,6 +51,7 @@ git clone https://github.com/8b-is/qultrakotoro.git
 cd qultrakotoro
 swift build
 swift test
+swift run KotoroMac   # launch the macOS app
 ```
 
 Add as a dependency:
@@ -85,6 +86,9 @@ import KotoroCore
 qultrakotoro/
 ├── Package.swift
 ├── Sources/KotoroCore/          # the library (offline-first core)
+├── Sources/KotoroUI/            # SwiftUI: Onboarding, Transcribe, Settings
+├── Sources/KotoroMac/           # macOS app shell (swift run KotoroMac)
+├── Sources/KotoroIOS/           # iOS app shell (Xcode / SwiftPM iOS build)
 ├── Tests/                  # swift test
 ├── scripts/check-offline.sh# the offline-first gate (runs in CI)
 └── .github/                # templates, CODEOWNERS, CI
@@ -108,8 +112,8 @@ See [PRIVACY.md](PRIVACY.md). In one line: **your data never leaves the device.*
 
 ## Versioning
 
-[Semantic Versioning](https://semver.org). The current version is **0.1.0** — see
-[CHANGELOG.md](CHANGELOG.md). Releases are tagged `v0.1.0`.
+[Semantic Versioning](https://semver.org). The current version is **0.2.0** — see
+[CHANGELOG.md](CHANGELOG.md). Releases are tagged `v0.2.0`.
 
 ## Roadmap
 
