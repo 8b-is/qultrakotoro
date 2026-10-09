@@ -15,6 +15,9 @@ This project adheres to [Semantic Versioning](https://semver.org).
 - **`KotoroCore` offline demo engine** — `TakeAudio` + `OfflineDemoEngine`,
   a dependency-free `SpeechToText` so the whole path runs with no network.
 - `TakeFlowTests` pinning the engine duration, the emotion tag, and the free gate.
+- **`scripts/build-mac-app.sh`** — assembles `build/qUltraKotoro.app` (Info.plist,
+  `.icns` from the appiconset, ad-hoc signature) with no Xcode project, so the
+  macOS app builds and launches end to end.
 
 ### Changed
 - `KotoroAppInfo.version` → `0.2.0`.

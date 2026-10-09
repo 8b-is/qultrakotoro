@@ -51,7 +51,9 @@ git clone https://github.com/8b-is/qultrakotoro.git
 cd qultrakotoro
 swift build
 swift test
-swift run KotoroMac   # launch the macOS app
+swift run KotoroMac              # run the macOS app directly
+scripts/build-mac-app.sh        # ...or a real .app bundle
+open build/qUltraKotoro.app
 ```
 
 Add as a dependency:
