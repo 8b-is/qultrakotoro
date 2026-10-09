@@ -26,6 +26,38 @@ final class QuantTernTests: XCTestCase {
         XCTAssertEqual(code.bytes, [0b01010101])  // every trit = zero (code 1)
     }
 
+    func testEncodeCustomHigherThreshold() {
+        let code = QuantTern.encode(
+            VAD(valence: 0.6, arousal: -0.6, dominance: 0.4), threshold: 0.75
+        )
+        XCTAssertEqual(code.trits, [.zero, .zero, .zero])
+        XCTAssertEqual(code.bytes, [0b01010101])
+    }
+
+    func testEncodeCustomLowerThreshold() {
+        let code = QuantTern.encode(
+            VAD(valence: 0.2, arousal: -0.2, dominance: 0.09), threshold: 0.1
+        )
+        XCTAssertEqual(code.trits, [.plus, .minus, .zero])
+        XCTAssertEqual(code.bytes, [0b01010010])
+    }
+
+    func testEncodeCustomThresholdIsInclusive() {
+        let code = QuantTern.encode(
+            VAD(valence: 0.5, arousal: -0.5, dominance: 0.49), threshold: 0.5
+        )
+        XCTAssertEqual(code.trits, [.plus, .minus, .zero])
+    }
+
+    func testEncodeDefaultThresholdPreservesPacking() {
+        let vad = VAD(valence: 0.33, arousal: -0.33, dominance: 0.32)
+        let code = QuantTern.encode(vad)
+        XCTAssertEqual(code.trits, [.plus, .minus, .zero])
+        XCTAssertEqual(code.bytes, [0b01010010])
+        XCTAssertEqual(code.hex, "qt:52")
+        XCTAssertEqual(code, QuantTern.encode(vad, threshold: QuantTern.defaultThreshold))
+    }
+
     func testEncodePositiveWords() {
         let tagger = EmotionTagger()
         let v = tagger.vad(for: "I love this warm good hope")
