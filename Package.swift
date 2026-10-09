@@ -1,5 +1,9 @@
 // swift-tools-version: 5.9
 import PackageDescription
+import Foundation
+
+let cliInfo = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    .appendingPathComponent("Sources/KotoroCLI/Info.plist").path
 
 // qUltraKotoro — superwhisper on steroids.
 // Local speech-to-text, an emotional QuantTern encoding, and the app core for
@@ -23,7 +27,11 @@ let package = Package(
         .target(name: "KotoroUI", dependencies: ["KotoroCore", "QuantTern"], resources: [.process("Resources")]),
         .executableTarget(name: "KotoroMac", dependencies: ["KotoroUI", "KotoroCore", "QuantTern"]),
         .executableTarget(name: "KotoroIOS", dependencies: ["KotoroUI", "KotoroCore", "QuantTern"]),
-        .executableTarget(name: "KotoroCLI", dependencies: ["KotoroCore", "QuantTern"]),
+        .executableTarget(name: "KotoroCLI", dependencies: ["KotoroCore", "QuantTern"],
+                          exclude: ["Info.plist"],
+                          linkerSettings: [.unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT",
+                                                         "-Xlinker", "__info_plist", "-Xlinker", cliInfo],
+                                                        .when(platforms: [.macOS]))]),
         .testTarget(name: "QuantTernTests", dependencies: ["QuantTern", "KotoroCore"]),
         .testTarget(name: "KotoroUITests", dependencies: ["KotoroUI"]),
     ]

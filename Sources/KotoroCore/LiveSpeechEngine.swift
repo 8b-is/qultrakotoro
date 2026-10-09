@@ -6,6 +6,7 @@ import Speech
 /// headset mic as input and the same headset as output. Nothing leaves the
 /// device: recognition is forced on-device (`requiresOnDeviceRecognition`) and
 /// the audio only ever lives in RAM.
+@MainActor
 public final class LiveSpeechEngine: NSObject {
     public struct Update: Sendable {
         public let text: String
@@ -23,9 +24,13 @@ public final class LiveSpeechEngine: NSObject {
     private var startedAt: Date?
     private var latest = ""
     private var detector = NoiseDetector()
+    private var completion = LocalSpeechResult()
+    private var takeID = UUID()
+    private var tapInstalled = false
+    private var duration: Double = 0
+    public var onFailure: ((Error) -> Void)?
 
-    /// Live partials. Delivered on an audio/recognition thread — hop to the
-    /// main actor before touching UI.
+    /// Live partials delivered on the main actor.
     public var onUpdate: (@Sendable (Update) -> Void)?
     public private(set) var isRunning = false
 
@@ -35,19 +40,24 @@ public final class LiveSpeechEngine: NSObject {
     }
 
     public static func available(localeID: String = "en-US") -> Bool {
-        SFSpeechRecognizer(locale: Locale(identifier: localeID))?.isAvailable ?? false
+        guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: localeID)) else { return false }
+        return recognizer.isAvailable && recognizer.supportsOnDeviceRecognition
     }
 
     /// Ask for speech + microphone access. Returns true only if both are granted.
     @discardableResult
     public static func requestPermissions() async -> Bool {
-        let speech = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
+        let speech = await requestSpeechPermission()
+        guard speech else { return false }
+        return await requestMicrophone()
+    }
+
+    public static func requestSpeechPermission() async -> Bool {
+        await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
             SFSpeechRecognizer.requestAuthorization { status in
                 cont.resume(returning: status == .authorized)
             }
         }
-        let mic = await requestMicrophone()
-        return speech && mic
     }
 
     private static func requestMicrophone() async -> Bool {
@@ -68,51 +78,101 @@ public final class LiveSpeechEngine: NSObject {
 
     public func start() throws {
         guard !isRunning else { return }
-        try configureAudioSession()
+        guard let recognizer else { throw LocalSpeechError.unavailable }
+        try LocalSpeechPolicy.validate(available: recognizer.isAvailable,
+                                       supportsOnDevice: recognizer.supportsOnDeviceRecognition)
         latest = ""
         detector.reset()
         startedAt = Date()
+        duration = 0
+        completion = LocalSpeechResult()
+        takeID = UUID()
+        let id = takeID
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        request.requiresOnDeviceRecognition = recognizer?.supportsOnDeviceRecognition ?? false
+        try LocalSpeechPolicy.prepare(request, available: recognizer.isAvailable,
+                                      supportsOnDevice: recognizer.supportsOnDeviceRecognition)
         self.request = request
+        try configureAudioSession()
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            deactivateAudioSession()
+            self.request = nil
+            throw LocalSpeechError.unavailable
+        }
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             request.append(buffer)
-            self?.detector.ingest(Self.samples(from: buffer))
-            self?.emit(isFinal: false)
+            let samples = Self.samples(from: buffer)
+            Task { @MainActor in
+                guard let self, self.takeID == id, self.isRunning else { return }
+                self.detector.ingest(samples)
+                self.emit(isFinal: false)
+            }
         }
 
-        engine.prepare()
-        try engine.start()
-
-        task = recognizer?.recognitionTask(with: request) { [weak self] result, _ in
-            guard let self, let result else { return }
-            self.latest = result.bestTranscription.formattedString
-            self.emit(isFinal: result.isFinal)
+        tapInstalled = true
+        do {
+            engine.prepare()
+            try engine.start()
+        } catch {
+            stopCapture()
+            request.endAudio()
+            self.request = nil
+            throw error
         }
         isRunning = true
+        task = recognizer.recognitionTask(with: request) { [weak self] result, error in
+            let text = result?.bestTranscription.formattedString
+            let final = result?.isFinal ?? false
+            Task { @MainActor in
+                guard let self, self.takeID == id else { return }
+                if let text { self.latest = text }
+                self.completion.receive(text: text, isFinal: final, error: error)
+                self.emit(isFinal: final)
+                if final || error != nil {
+                    self.stopCapture()
+                    self.request?.endAudio()
+                    if !final, let error { self.onFailure?(error) }
+                }
+            }
+        }
     }
 
-    /// Stops capture and returns the take: the transcript so far plus the wall
-    /// clock duration actually recorded.
-    public func stop() async -> Transcript {
-        guard isRunning else { return Transcript(text: latest, seconds: 0) }
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+    /// End input, then await the final transcript (or an explicit failure).
+    public func stop() async throws -> Transcript {
+        stopCapture()
         request?.endAudio()
-        task?.finish()
-        isRunning = false
+        defer {
+            task?.cancel()
+            task = nil
+            request = nil
+        }
+        let text = try await completion.wait()
+        return Transcript(text: text, seconds: duration)
+    }
 
-        let seconds = Date().timeIntervalSince(startedAt ?? Date())
-        let transcript = Transcript(text: latest, seconds: seconds)
+    public func cancel() {
+        stopCapture()
+        takeID = UUID()
+        completion.finish(.failure(CancellationError()))
+        request?.endAudio()
+        task?.cancel()
         task = nil
         request = nil
+    }
+
+    private func stopCapture() {
+        if isRunning { duration = Date().timeIntervalSince(startedAt ?? Date()) }
+        if tapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
+        engine.stop()
+        isRunning = false
         deactivateAudioSession()
-        return transcript
     }
 
     private func emit(isFinal: Bool) {
@@ -122,7 +182,7 @@ public final class LiveSpeechEngine: NSObject {
                          levelDBFS: profile.levelDBFS, noise: profile.classification))
     }
 
-    private static func samples(from buffer: AVAudioPCMBuffer) -> [Float] {
+    nonisolated private static func samples(from buffer: AVAudioPCMBuffer) -> [Float] {
         guard let channel = buffer.floatChannelData?[0] else { return [] }
         return Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
     }

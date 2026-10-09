@@ -85,13 +85,13 @@ public struct SettingsView: View {
             }
 
             Section("Privacy") {
-                Toggle("Offline only", isOn: $offlineOnly)
-                Text("qUltraKotoro never calls the network. The build fails in CI if a networking API ever appears in the core.")
+                Toggle("Offline only", isOn: .constant(true)).disabled(true)
+                Text("Speech recognition requires an available on-device model. Cloud fallback is disabled. Opening external links uses your browser.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
             Section("Sync") {
-                Toggle("Sync transcripts with iCloud", isOn: $iCloudSync)
+                Text("Transcript sync is not implemented.")
             }
 
             Section("About") {

@@ -42,6 +42,7 @@ public struct KotoroMainView: View {
 /// - **Demo** — type a take, pick a duration, run the offline engine.
 /// - **Live** — capture the headset mic and transcribe on-device as you go
 ///   (a walk in Tokyo, headphones in and out).
+@MainActor
 public struct TranscribeView: View {
     @AppStorage(KotoroKeys.engineID) private var engineID = "apple"
     @AppStorage(KotoroKeys.localeID) private var localeID = "en-US"
@@ -55,6 +56,8 @@ public struct TranscribeView: View {
 
     @State private var liveEngine: LiveSpeechEngine?
     @State private var liveRunning = false
+    @State private var liveBusy = false
+    @State private var liveGeneration = 0
     @State private var liveText = ""
     @State private var liveSeconds = 0.0
     @State private var liveLevel: Float = -80
@@ -80,7 +83,7 @@ public struct TranscribeView: View {
                 Button {
                     Task { await runTake() }
                 } label: {
-                    Label("Take", systemImage: "mic.circle.fill")
+                    Label("Tag demo text", systemImage: "mic.circle.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -91,6 +94,12 @@ public struct TranscribeView: View {
             }
             .padding(20)
             .frame(maxWidth: 560, alignment: .leading)
+        }
+        .onDisappear {
+            liveGeneration += 1
+            liveEngine?.cancel()
+            liveEngine = nil
+            liveRunning = false
         }
     }
 
@@ -139,6 +148,7 @@ public struct TranscribeView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(liveRunning ? .red : .accentColor)
+                .disabled(liveBusy)
 
                 if liveRunning || !liveText.isEmpty {
                     Text(KotoroAppInfo.timecode(liveSeconds))
@@ -231,8 +241,19 @@ public struct TranscribeView: View {
     }
 
     private func toggleLive() async {
+        guard !liveBusy else { return }
+        liveBusy = true
+        let generation = liveGeneration
+        defer { liveBusy = false }
         if liveRunning {
-            let finished = await liveEngine?.stop()
+            let finished: Transcript?
+            do { finished = try await liveEngine?.stop() }
+            catch {
+                errorText = error.localizedDescription
+                liveRunning = false
+                liveEngine = nil
+                return
+            }
             liveRunning = false
             liveEngine = nil
             if var t = finished {
@@ -243,13 +264,27 @@ public struct TranscribeView: View {
             return
         }
 
+        guard engineID == "apple" else {
+            errorText = "This engine is not integrated yet. Select Apple on-device speech in Settings."
+            return
+        }
         guard LiveSpeechEngine.available(localeID: localeID) else {
             errorText = "On-device speech recognition is unavailable for \(KotoroLocale.named(localeID).name)."
             return
         }
-        _ = await LiveSpeechEngine.requestPermissions()
+        guard await LiveSpeechEngine.requestPermissions() else {
+            errorText = LocalSpeechError.permissionDenied.localizedDescription
+            return
+        }
 
+        guard generation == liveGeneration else { return }
         let engine = LiveSpeechEngine(localeID: localeID)
+        engine.onFailure = { error in
+            errorText = error.localizedDescription
+            liveRunning = false
+            liveEngine?.cancel()
+            liveEngine = nil
+        }
         engine.onUpdate = { update in
             Task { @MainActor in
                 liveText = update.text

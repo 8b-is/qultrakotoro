@@ -70,8 +70,8 @@ public struct NoiseDetector {
         peak = Swift.max(peak, blockPeak)
 
         let level = Self.dBFS(smoothedPower)
-        let peakDB = Self.dBFS(peak)
-        let zcr = Float(crossings) / Float(samples.count - 1)
+        let peakDB = Self.dBFS(peak * peak)
+        let zcr = samples.count > 1 ? Float(crossings) / Float(samples.count - 1) : 0
 
         profile = NoiseProfile(
             levelDBFS: level,

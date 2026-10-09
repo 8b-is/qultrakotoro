@@ -59,13 +59,7 @@ public struct KotoroEngineChoice: Identifiable, Hashable, Sendable {
 
     public static let all: [KotoroEngineChoice] = [
         .init(id: "apple", name: "Apple on-device speech",
-              detail: "Free, built in, zero setup. Great default.", symbol: "waveform"),
-        .init(id: "whisper.cpp", name: "whisper.cpp (local)",
-              detail: "Run scripts/fetch-model.sh for the best local model; fully offline.", symbol: "cpu"),
-        .init(id: "parakeet", name: "Parakeet (local)",
-              detail: "Fast multilingual on-device transcription.", symbol: "bird"),
-        .init(id: "osaurus", name: "Osaurus (macOS, localhost)",
-              detail: "Local model server on port 1337.", symbol: "desktopcomputer"),
+              detail: "Uses an installed on-device model; unavailable languages fail without cloud fallback.", symbol: "waveform"),
     ]
 
     public static func named(_ id: String) -> KotoroEngineChoice {
