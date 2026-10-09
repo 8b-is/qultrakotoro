@@ -3,6 +3,17 @@
 All notable changes to qUltraKotoro are documented here.
 This project adheres to [Semantic Versioning](https://semver.org).
 
+## [0.6.0] — 2026-10-09
+
+### Added
+- **`kotorocli`** — a command-line tool over the same offline brain:
+  `emotion` (VAD + QuantTern code, `--json`), `noise` (level/peak/zcr/class from
+  an audio file), `transcribe` (on-device file transcription), `live`
+  (mic take with a streaming noise badge), plus `engines` and `locales`.
+
+### Changed
+- `KotoroAppInfo.version` → `0.6.0`.
+
 ## [0.5.0] — 2026-10-09
 
 ### Added

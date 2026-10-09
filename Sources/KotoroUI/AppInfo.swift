@@ -4,7 +4,7 @@ import Foundation
 /// values are testable and identical across iOS and macOS.
 public enum KotoroAppInfo {
     public static let name = "qUltraKotoro"
-    public static let version = "0.5.0"
+    public static let version = "0.6.0"
 
     /// Personal build default: start in Pro (unlimited takes + beta manuscripts).
     public static let defaultPro = true

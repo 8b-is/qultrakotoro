@@ -10,7 +10,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 CONFIG="${1:-release}"
-VERSION="0.5.0"
+VERSION="0.6.0"
 PRODUCT="KotoroMac"
 APP_NAME="qUltraKotoro"
 BUNDLE_ID="dev.vaked.qultrakotoro"
