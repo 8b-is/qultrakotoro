@@ -11,6 +11,8 @@ public final class LiveSpeechEngine: NSObject {
         public let text: String
         public let seconds: Double
         public let isFinal: Bool
+        public let levelDBFS: Float
+        public let noise: NoiseClass
     }
 
     private let engine = AVAudioEngine()
@@ -20,6 +22,7 @@ public final class LiveSpeechEngine: NSObject {
     private var task: SFSpeechRecognitionTask?
     private var startedAt: Date?
     private var latest = ""
+    private var detector = NoiseDetector()
 
     /// Live partials. Delivered on an audio/recognition thread — hop to the
     /// main actor before touching UI.
@@ -67,6 +70,7 @@ public final class LiveSpeechEngine: NSObject {
         guard !isRunning else { return }
         try configureAudioSession()
         latest = ""
+        detector.reset()
         startedAt = Date()
 
         let request = SFSpeechAudioBufferRecognitionRequest()
@@ -78,6 +82,7 @@ public final class LiveSpeechEngine: NSObject {
         let format = input.outputFormat(forBus: 0)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             request.append(buffer)
+            self?.detector.ingest(Self.samples(from: buffer))
             self?.emit(isFinal: false)
         }
 
@@ -112,7 +117,14 @@ public final class LiveSpeechEngine: NSObject {
 
     private func emit(isFinal: Bool) {
         let seconds = Date().timeIntervalSince(startedAt ?? Date())
-        onUpdate?(Update(text: latest, seconds: seconds, isFinal: isFinal))
+        let profile = detector.profile
+        onUpdate?(Update(text: latest, seconds: seconds, isFinal: isFinal,
+                         levelDBFS: profile.levelDBFS, noise: profile.classification))
+    }
+
+    private static func samples(from buffer: AVAudioPCMBuffer) -> [Float] {
+        guard let channel = buffer.floatChannelData?[0] else { return [] }
+        return Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
     }
 
     private func configureAudioSession() throws {

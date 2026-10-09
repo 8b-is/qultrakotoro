@@ -3,6 +3,19 @@
 All notable changes to qUltraKotoro are documented here.
 This project adheres to [Semantic Versioning](https://semver.org).
 
+## [0.5.0] — 2026-10-09
+
+### Added
+- **Noise detection** — `NoiseDetector` / `NoiseProfile` read the soundscape
+  (running RMS in dBFS, peak, zero-crossing rate, and a silence/quiet/ambient/
+  noisy class) straight from the live audio buffers.
+- The live take shows a noise badge (class + level in dB) so you can tell
+  whether a walk take came out clean.
+- `NoiseDetectorTests` pin silence, full-scale, quiet, and reset behaviour.
+
+### Changed
+- `KotoroAppInfo.version` → `0.5.0`.
+
 ## [0.4.0] — 2026-10-09
 
 ### Added

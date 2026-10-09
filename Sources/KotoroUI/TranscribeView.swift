@@ -57,6 +57,8 @@ public struct TranscribeView: View {
     @State private var liveRunning = false
     @State private var liveText = ""
     @State private var liveSeconds = 0.0
+    @State private var liveLevel: Float = -80
+    @State private var liveNoise: NoiseClass = .silence
 
     public init() {}
 
@@ -145,6 +147,9 @@ public struct TranscribeView: View {
                 }
                 Spacer()
             }
+            if liveRunning {
+                noiseBadge
+            }
             Text("Headset mic in · same headset out. Recognition runs on-device; audio never leaves RAM.")
                 .font(.caption).foregroundStyle(.secondary)
             if !liveText.isEmpty {
@@ -155,6 +160,25 @@ public struct TranscribeView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: 10).fill(.quaternary.opacity(0.4)))
             }
+        }
+    }
+
+    private var noiseBadge: some View {
+        HStack(spacing: 8) {
+            Circle().fill(noiseColor(liveNoise)).frame(width: 8, height: 8)
+            Text(liveNoise.label).font(.system(.caption, design: .monospaced))
+            Text(String(format: "%.0f dB", liveLevel))
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func noiseColor(_ noise: NoiseClass) -> Color {
+        switch noise {
+        case .silence: return .secondary
+        case .quiet:   return .green
+        case .ambient: return .yellow
+        case .noisy:   return .red
         }
     }
 
@@ -230,6 +254,8 @@ public struct TranscribeView: View {
             Task { @MainActor in
                 liveText = update.text
                 liveSeconds = update.seconds
+                liveLevel = update.levelDBFS
+                liveNoise = update.noise
             }
         }
         do {

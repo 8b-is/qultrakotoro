@@ -104,3 +104,39 @@ final class TakeFlowTests: XCTestCase {
         }
     }
 }
+
+final class NoiseDetectorTests: XCTestCase {
+
+    private func sine(amplitude: Float, count: Int = 4096) -> [Float] {
+        (0..<count).map { amplitude * Float(sin(2 * Double.pi * 440 * Double($0) / 16_000)) }
+    }
+
+    func testSilenceClassifiesSilent() {
+        var detector = NoiseDetector()
+        let profile = detector.ingest([Float](repeating: 0, count: 2048))
+        XCTAssertEqual(profile.classification, .silence)
+        XCTAssertEqual(profile.levelDBFS, -80, accuracy: 0.001)
+    }
+
+    func testFullScaleToneIsNoisy() {
+        var detector = NoiseDetector()
+        for _ in 0..<30 { _ = detector.ingest(sine(amplitude: 1.0)) }
+        // full-scale sine RMS ≈ 0.707 → ≈ −3 dBFS
+        XCTAssertEqual(detector.profile.levelDBFS, -3.0, accuracy: 1.0)
+        XCTAssertEqual(detector.profile.classification, .noisy)
+        XCTAssertEqual(detector.profile.peakDBFS, 0, accuracy: 0.5)
+    }
+
+    func testQuietToneIsQuiet() {
+        var detector = NoiseDetector()
+        for _ in 0..<30 { _ = detector.ingest(sine(amplitude: 0.02)) }
+        XCTAssertEqual(detector.profile.classification, .quiet)
+    }
+
+    func testResetClearsState() {
+        var detector = NoiseDetector()
+        for _ in 0..<10 { _ = detector.ingest(sine(amplitude: 1.0)) }
+        detector.reset()
+        XCTAssertEqual(detector.profile, .silence)
+    }
+}
