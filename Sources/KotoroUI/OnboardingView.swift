@@ -137,7 +137,7 @@ public struct OnboardingPage: Hashable {
     public static func all(engineID: String) -> [OnboardingPage] {
         [
             .init(title: "Welcome to \(KotoroAppInfo.name)",
-                  body: "On-device speech-to-text with an emotional QuantTern fingerprint. Everything runs on your \(platformName) — no account, no cloud, no network API anywhere in the code.",
+                  body: "On-device speech-to-text with an emotional QuantTern fingerprint. Recognition requires a local Apple speech model on your \(platformName). No account is required and cloud recognition fallback is disabled.",
                   symbol: "hand.wave", enginePicker: false, bullets: nil, guide: nil),
 
             .init(title: engineTitle,
@@ -145,7 +145,7 @@ public struct OnboardingPage: Hashable {
                   symbol: platformSymbol, enginePicker: true, bullets: nil, guide: nil),
 
             .init(title: "Add an on-device model",
-                  body: "Download a local transcription model once, and it lives on your device from then on. Bring a Whisper/Parakeet model, or let Apple's built-in recogniser do the work.",
+                  body: "This version uses Apple Speech. An on-device model must be available for your selected language; otherwise transcription stops with an error. Whisper, Parakeet, and Osaurus are not integrated yet.",
                   symbol: "arrow.down.circle", enginePicker: false,
                   bullets: ["Models stay on-device", "Works with airplane mode on", "No sign-in required"], guide: nil),
 
@@ -155,7 +155,7 @@ public struct OnboardingPage: Hashable {
                   bullets: ["Share Sheet → Transcribe", "File → Transcribe", "Dictation → Transcribe"], guide: KotoroAppInfo.setupGuide),
 
             .init(title: "Stay offline, on purpose",
-                  body: "The core is guarded in CI: if it ever reaches for the network, the build fails. Privacy here is a compile-time property, not a setting.",
+                  body: "Audio recognition requests require an on-device model. A source lint check also flags common networking APIs, but is not a substitute for offline device testing.",
                   symbol: "lock.shield", enginePicker: false,
                   bullets: ["Offline-first gate enforced in CI", "Free for takes up to 60 seconds", "Pro (€4.20/mo) unlocks unlimited + the beta manuscripts"], guide: nil),
 
@@ -186,15 +186,15 @@ public struct OnboardingPage: Hashable {
         #if os(macOS)
         "Point it at your Mac"
         #else
-        "Turn on Apple Intelligence"
+        "Choose on-device speech"
         #endif
     }
 
     private static var engineBody: String {
         #if os(macOS)
-        "Osaurus runs a local model server on your Mac. Point qUltraKotoro at localhost:1337, or pick a whisper.cpp / Parakeet build — whichever you already trust."
+        "Use Apple Speech with a supported local language model. Other engine adapters are planned, not enabled."
         #else
-        "Enable Apple Intelligence in Settings so the on-device speech and language models are available. Nothing is sent off the phone."
+        "Select a language supported by Apple on-device speech on this iPhone. If the local model is unavailable, recognition will not fall back to a server."
         #endif
     }
 }
