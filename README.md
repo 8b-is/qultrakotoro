@@ -73,8 +73,8 @@ working, fully on-device session in a few taps.
   Shortcuts, permissions, and offline mode.
 - **In-app onboarding:** the `KotoroUI` target ships `OnboardingView` for the
   first-install flow and `SettingsView` for everything after that.
-- **The offline gate:** `scripts/check-offline.sh` fails CI if the core ever
-  reaches for the network. Privacy is a compile-time property here.
+- **The offline gate:** `scripts/check-offline.sh` flags common networking API names.
+  This is a lint check; the runtime also rejects unavailable local speech models.
 
 ## Usage
 
@@ -144,8 +144,7 @@ qultrakotoro/
 
 qUltraKotoro must work with the network off. The gate `scripts/check-offline.sh` scans
 `Sources/` for networking APIs (`URLSession`, `URLRequest`, `NWConnection`,
-`import Network`) and **fails the build** if any appear. Privacy is not a setting;
-it is a compile-time property. See [PRIVACY.md](PRIVACY.md).
+`import Network`) and **fails the build** if any appear. This scan is a lint check, not a privacy sandbox or proof of framework behavior. See [PRIVACY.md](PRIVACY.md).
 
 ## Security
 
@@ -154,7 +153,7 @@ public issue for security problems.
 
 ## Privacy
 
-See [PRIVACY.md](PRIVACY.md). In one line: **your data never leaves the device.**
+See [PRIVACY.md](PRIVACY.md). In one line: **speech requests require an available on-device model; external links use your browser.**
 
 ## Versioning
 
@@ -184,3 +183,21 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the
   url    = {https://github.com/8b-is/qultrakotoro}
 }
 ```
+
+## Recognition readiness
+
+Live and file recognition currently use **Apple Speech only**, and require an
+installed on-device model for the requested language. If local recognition is
+unsupported or unavailable, the request fails instead of permitting cloud
+fallback. Permission denial, recognition errors, and final-result timeouts are
+reported explicitly. Stop waits up to ten seconds for the final live transcript.
+
+The **Tag demo text** action demonstrates emotion tagging of text you type; it
+is not audio transcription. Whisper, Parakeet, and Osaurus adapters are not
+integrated. `fetch-model.sh` downloads a file but does not enable these engines.
+The emotion tagger is an English word-list heuristic, not a learned emotion model.
+
+The offline source scan is a lint check, not proof of framework behavior or a
+sandbox. Real-device offline recognition must also be tested for each supported
+language before release. Synthetic regression tests cover local-only eligibility,
+final-result/error/timeout/cancellation handling, and audio-level calculations.

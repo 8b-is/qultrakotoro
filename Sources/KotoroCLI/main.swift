@@ -60,6 +60,7 @@ func json(_ pairs: [(String, String)]) -> String {
     return "{ \(body) }"
 }
 
+@MainActor
 func run() async {
     guard let command = argv.first else { stdout(usage); exit(0) }
     let rest = Array(argv.dropFirst())
@@ -71,12 +72,7 @@ func run() async {
         stdout(usage)
 
     case "engines":
-        for e in [("apple", "Apple on-device speech (no download)"),
-                  ("whisper.cpp", "local GGML model via scripts/fetch-model.sh"),
-                  ("parakeet", "fast multilingual on-device"),
-                  ("osaurus", "macOS localhost model server")] {
-            stdout("\(e.0)\t\(e.1)")
-        }
+        stdout("apple\tApple Speech; requires an installed on-device model. No cloud fallback.")
 
     case "locales":
         for l in ["en-US", "ja-JP", "zh-CN", "zh-TW", "nan-TW"] {
@@ -140,35 +136,20 @@ func run() async {
         guard let path = positional(rest).first else { fail("transcribe: need an audio file") }
         let url = URL(fileURLWithPath: path)
         guard FileManager.default.fileExists(atPath: url.path) else { fail("transcribe: no such file: \(path)") }
-        guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: localeID)),
-              recognizer.isAvailable else {
-            fail("transcribe: speech recognition is unavailable for \(localeID)")
-        }
-        let request = SFSpeechURLRecognitionRequest(url: url)
-        request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
-        request.shouldReportPartialResults = false
-
-        let text: String = try! await withCheckedContinuation { continuation in
-            var resumed = false
-            recognizer.recognitionTask(with: request) { result, error in
-                guard !resumed else { return }
-                if error != nil { resumed = true; continuation.resume(returning: ""); return }
-                if let result, result.isFinal {
-                    resumed = true
-                    continuation.resume(returning: result.bestTranscription.formattedString)
-                }
-            }
-        }
+        let text: String
+        do { text = try await LocalFileSpeech.transcribe(url: url, localeID: localeID) }
+        catch { fail("transcribe: \(error.localizedDescription)") }
         let vad = EmotionTagger().vad(for: text)
         stdout(text.isEmpty ? "(no speech)" : text)
         stdout("code  \(QuantTern.encode(vad).hex)")
 
     case "live":
         let seconds = positional(rest).first.flatMap(Double.init) ?? 30
+        guard seconds.isFinite && seconds > 0 && seconds <= 86400 else { fail("live: seconds must be between 0 and 86400") }
         guard LiveSpeechEngine.available(localeID: localeID) else {
             fail("live: speech recognition is unavailable for \(localeID)")
         }
-        _ = await LiveSpeechEngine.requestPermissions()
+        guard await LiveSpeechEngine.requestPermissions() else { fail("live: permission denied") }
         let engine = LiveSpeechEngine(localeID: localeID)
         engine.onUpdate = { update in
             let line = String(format: "[%-7@ %4.0f dB] %@", update.noise.label as NSString,
@@ -177,7 +158,9 @@ func run() async {
         }
         do { try engine.start() } catch { fail("live: \(error.localizedDescription)") }
         try? await Task.sleep(for: .seconds(seconds))
-        let transcript = await engine.stop()
+        let transcript: Transcript
+        do { transcript = try await engine.stop() }
+        catch { fail("live: \(error.localizedDescription)") }
         stdout("")
         stdout(transcript.text.isEmpty ? "(no speech)" : transcript.text)
         stdout(String(format: "take  %.0f s", transcript.seconds))
