@@ -53,7 +53,7 @@ public enum QuantTern {
     public static let defaultThreshold: Float = 0.33
 
     public static func encode(_ vad: VAD, threshold: Float = defaultThreshold) -> EmotionCode {
-        pack(vad.trits)
+        pack([vad.valence, vad.arousal, vad.dominance].map { Trit($0, threshold: threshold) })
     }
 
     public static func pack(_ trits: [Trit]) -> EmotionCode {
