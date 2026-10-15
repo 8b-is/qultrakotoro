@@ -1,23 +1,20 @@
 # Privacy — qUltraKotoro
 
-## The short version
+Speech recognition in this revision requires an available Apple on-device model.
+Requests fail when local recognition is unsupported; there is no cloud fallback.
+Microphone capture requires permission. File transcription requires speech
+recognition permission but does not request microphone access.
 
-**Your data never leaves your device.** qUltraKotoro is offline-first and local by
-construction — not by policy.
+The app does not implement telemetry, analytics, accounts, or transcript sync.
+Live audio is held in memory; settings are stored locally in UserDefaults.
+Opening setup, source, or other external links sends ordinary browser requests
+to those websites. The optional model-download script contacts Hugging Face;
+its downloaded models are not yet connected to a transcription engine.
 
-## What we collect
-
-Nothing. There is no telemetry, no analytics, no account, no server in the core.
-
-## What stays on your device
-
-Your inputs and any local state live on your machine (and, if you enable it in
-the app shell, your own iCloud/Keychain). The core never transmits them.
-
-## Why this is trustworthy
-
-It is a compile-time property: `scripts/check-offline.sh` fails the build if any
-networking API appears in `Sources/`. See the CI badge.
+`scripts/check-offline.sh` is a source lint check for common networking APIs.
+It is not a sandbox, network monitor, or proof of framework behavior. Validate
+recognition offline on each supported device and language before release.
+Earlier revisions did not enforce the on-device requirement when unsupported.
 
 ## Contact
 
