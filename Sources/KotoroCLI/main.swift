@@ -37,11 +37,12 @@ func positional(_ args: [String]) -> [String] {
 }
 
 let usage = """
-kotorocli — on-device speech-to-text, emotion, and noise
+kotorocli — on-device speech-to-text, emotion, noise, and dynamic environment equalizer
 
 USAGE
   kotorocli emotion <text...> [--json]
   kotorocli noise <audio-file> [--json]
+  kotorocli eq <audio-file> [--json]
   kotorocli transcribe <audio-file> [--locale <tag>]
   kotorocli live [seconds] [--locale <tag>]
   kotorocli engines
@@ -130,6 +131,62 @@ func run() async {
             stdout(String(format: "peak   %.1f dBFS", p.peakDBFS))
             stdout(String(format: "zcr    %.3f", p.zeroCrossingRate))
             stdout("class  \(p.classification.label)")
+        }
+
+    case "eq":
+        guard let path = positional(rest).first else { fail("eq: need an audio file") }
+        let url = URL(fileURLWithPath: path)
+        guard FileManager.default.fileExists(atPath: url.path) else { fail("eq: no such file: \(path)") }
+        let file: AVAudioFile
+        do { file = try AVAudioFile(forReading: url) }
+        catch { fail("eq: cannot read audio: \(error.localizedDescription)") }
+
+        guard file.length > 0,
+              let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat,
+                                            frameCapacity: AVAudioFrameCount(file.length)) else {
+            fail("eq: cannot allocate buffer")
+        }
+        do { try file.read(into: buffer) }
+        catch { fail("eq: read failed: \(error.localizedDescription)") }
+
+        var eq = DynamicEqualizer(maxVolume: true)
+        let pcm = samples(buffer)
+        let sr = Float(file.processingFormat.sampleRate)
+        var index = 0
+        var snap: DynamicEqSnapshot?
+        while index < pcm.count {
+            let end = min(index + 4096, pcm.count)
+            snap = eq.ingest(Array(pcm[index..<end]), sampleRate: sr)
+            index = end
+        }
+        guard let s = snap else { fail("eq: empty audio") }
+        let foldHex = String(format: "0x%016llx", s.wupzFold)
+        if jsonOut {
+            stdout(json([
+                ("class", "\"\(s.noise.classification.label)\""),
+                ("levelDBFS", String(format: "%.2f", s.noise.levelDBFS)),
+                ("salience", String(format: "%.4f", s.salience)),
+                ("f0Hz", String(format: "%.1f", s.estimatedF0Hz)),
+                ("code", "\"\(s.emotion.hex)\""),
+                ("sub60Hz", String(format: "%.2f", s.bands.sub60Hz)),
+                ("low250Hz", String(format: "%.2f", s.bands.low250Hz)),
+                ("mid1kHz", String(format: "%.2f", s.bands.mid1kHz)),
+                ("highMid4kHz", String(format: "%.2f", s.bands.highMid4kHz)),
+                ("air12kHz", String(format: "%.2f", s.bands.air12kHz)),
+                ("leftJackVol", String(format: "%.2f", s.splitEar.leftJackVolume)),
+                ("rightAirPodsVol", String(format: "%.2f", s.splitEar.rightAirPodsRightCh)),
+                ("wupzFold", "\"\(foldHex)\""),
+                ("wupzByteDiff", String(s.wupzByteDiff)),
+                ("wupzPopcount", String(s.wupzPopcount))
+            ]))
+        } else {
+            stdout(String(format: "room   %-7@  level %.1f dBFS  zcr %.3f", s.noise.classification.label as NSString, s.noise.levelDBFS, s.noise.zeroCrossingRate))
+            stdout(String(format: "marine salience %.4f  f0 %.1f Hz  code %@", s.salience, s.estimatedF0Hz, s.emotion.hex as NSString))
+            stdout(String(format: "eq     60Hz %+.2fdB | 250Hz %+.2fdB | 1kHz %+.2fdB | 4kHz %+.2fdB | 12kHz %+.2fdB",
+                          s.bands.sub60Hz, s.bands.low250Hz, s.bands.mid1kHz, s.bands.highMid4kHz, s.bands.air12kHz))
+            stdout(String(format: "split  L:Jack %.2f (pan %.1f) | R:AirPods %.2f (trim %+.2fdB)",
+                          s.splitEar.leftJackVolume, s.splitEar.leftJackPan, s.splitEar.rightAirPodsRightCh, s.splitEar.transducerTrimDB))
+            stdout("wupz   fold \(foldHex)  diff \(s.wupzByteDiff)B  popcount \(s.wupzPopcount)")
         }
 
     case "transcribe":
