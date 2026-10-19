@@ -184,9 +184,21 @@ final class DynamicEqualizerTests: XCTestCase {
 
     func testMarineSalienceDetectsVoiceFundamental() {
         var marine = MarineSalience()
-        let s = marine.ingest(harmonicVoice(amplitude: 0.5, f0: 200))
-        XCTAssertGreaterThan(s, 0.05)
-        XCTAssertEqual(marine.estimatedF0(sampleRate: 16_000), 200.0, accuracy: 15.0)
+        let period = 80 // 200 Hz at 16 kHz
+        let cycles = 50
+        let amplitude = 0.5
+        let count = period * cycles
+        let s = marine.ingest(harmonicVoice(amplitude: Float(amplitude), f0: 200, count: count))
+
+        // Independent closed-form mean for complete sine cycles:
+        // sum(abs(sin(2*pi*n/80))) over one cycle = 2*cot(pi/80).
+        // The first peak anchors timing; the remaining 49 have zero jitter.
+        // Detection occurs one sample after each peak, at amplitude*cos(2*pi/80).
+        let energyMean = 0.1 * amplitude * 2 / (Double(period) * tan(Double.pi / Double(period)))
+        let peakBonus = 0.3 * amplitude * cos(2 * Double.pi / Double(period)) + 0.6
+        let expectedMean = energyMean + Double(cycles - 1) * peakBonus / Double(count)
+        XCTAssertEqual(Double(s), expectedMean, accuracy: 0.000001)
+        XCTAssertEqual(marine.estimatedF0(sampleRate: 16_000), 200.0, accuracy: 0.001)
     }
 
     func testDynamicEqualizerMaxSplitRoutingAndWupzFold() {

@@ -110,6 +110,10 @@ public struct MarineSalience: Sendable {
 
     /// Process a frame of PCM samples and return the mean Marine salience score in `0…1`.
     /// Frames are contiguous parts of one stream; call `reset()` before a new stream.
+    /// This is the raw per-sample mean, not a probability or a voice-present threshold.
+    /// Above the clip threshold, non-peaks contribute 0.1 times amplitude; valid peaks
+    /// contribute 0.4 times amplitude plus 0.6 times inverse jitter. The first peak
+    /// anchors timing and receives only the non-peak contribution.
     public mutating func ingest(_ samples: [Float], sampleRate: Float = 16_000) -> Float {
         guard !samples.isEmpty else { return 0 }
         let minPeriod = sampleRate / 640.0 // 640 Hz max human harmonic fundamental
