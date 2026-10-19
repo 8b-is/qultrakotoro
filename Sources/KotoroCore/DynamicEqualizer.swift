@@ -83,7 +83,8 @@ public struct MarineSalience: Sendable {
 
     private var prevSample: Float = 0
     private var prevPrevSample: Float = 0
-    private var lastPeakIndex: Int = 0
+    private var sampleIndex: Int = 0
+    private var lastPeakIndex: Int?
     public private(set) var emaAmplitude: Float = 0
     public private(set) var emaPeriod: Float = 0
 
@@ -95,7 +96,8 @@ public struct MarineSalience: Sendable {
     public mutating func reset() {
         prevSample = 0
         prevPrevSample = 0
-        lastPeakIndex = 0
+        sampleIndex = 0
+        lastPeakIndex = nil
         emaAmplitude = 0
         emaPeriod = 0
     }
@@ -107,44 +109,53 @@ public struct MarineSalience: Sendable {
     }
 
     /// Process a frame of PCM samples and return the mean Marine salience score in `0…1`.
+    /// Frames are contiguous parts of one stream; call `reset()` before a new stream.
     public mutating func ingest(_ samples: [Float], sampleRate: Float = 16_000) -> Float {
         guard !samples.isEmpty else { return 0 }
         let minPeriod = sampleRate / 640.0 // 640 Hz max human harmonic fundamental
         let maxPeriod = sampleRate / 50.0  // 50 Hz min fundamental
 
         var totalSalience: Float = 0
-        for (i, sample) in samples.enumerated() {
+        for sample in samples {
             let absSample = abs(sample)
             var salience: Float = 0
 
             if absSample >= clipThreshold {
+                salience = absSample * 0.1
                 let isMax = prevPrevSample < prevSample && prevSample > sample
                 if isMax {
-                    let currentPeak = max(0, i - 1)
-                    let period = Float(max(0, currentPeak - lastPeakIndex))
-                    if period >= minPeriod && period <= maxPeriod {
-                        let amp = abs(prevSample)
-                        if lastPeakIndex == 0 {
-                            emaAmplitude = amp
-                            emaPeriod = period
-                        } else {
-                            emaAmplitude = alpha * amp + (1.0 - alpha) * emaAmplitude
-                            emaPeriod = alpha * period + (1.0 - alpha) * emaPeriod
+                    // Peak positions share one clock across every frame boundary.
+                    let currentPeak = sampleIndex - 1
+                    if let previousPeak = lastPeakIndex {
+                        let period = Float(currentPeak - previousPeak)
+                        if period >= minPeriod && period <= maxPeriod {
+                            let amp = abs(prevSample)
+                            if emaPeriod == 0 {
+                                emaAmplitude = amp
+                                emaPeriod = period
+                            } else {
+                                emaAmplitude = alpha * amp + (1.0 - alpha) * emaAmplitude
+                                emaPeriod = alpha * period + (1.0 - alpha) * emaPeriod
+                            }
+                            let jP = abs(period - emaPeriod)
+                            let jA = abs(amp - emaAmplitude)
+                            let jitterContrib = 1.0 / (1.0 + jP + jA)
+                            salience = absSample * 0.4 + jitterContrib * 0.6
+                            lastPeakIndex = currentPeak
+                        } else if period > maxPeriod {
+                            // After a gap, measure the next period from this peak.
+                            lastPeakIndex = currentPeak
+                            emaAmplitude = 0
+                            emaPeriod = 0
                         }
-                        let jP = abs(period - emaPeriod)
-                        let jA = abs(amp - emaAmplitude)
-                        let jitterContrib = 1.0 / (1.0 + jP + jA)
-                        salience = absSample * 0.4 + jitterContrib * 0.6
-                        lastPeakIndex = currentPeak
                     } else {
-                        salience = absSample * 0.1
+                        lastPeakIndex = currentPeak
                     }
-                } else {
-                    salience = absSample * 0.1
                 }
             }
             prevPrevSample = prevSample
             prevSample = sample
+            sampleIndex += 1
             totalSalience += salience
         }
         return Swift.min(1.0, totalSalience / Float(samples.count))
