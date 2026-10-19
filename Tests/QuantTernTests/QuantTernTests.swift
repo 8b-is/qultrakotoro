@@ -172,3 +172,42 @@ final class NoiseDetectorTests: XCTestCase {
         XCTAssertEqual(detector.profile, .silence)
     }
 }
+
+final class DynamicEqualizerTests: XCTestCase {
+
+    private func harmonicVoice(amplitude: Float, f0: Double = 220, count: Int = 4096) -> [Float] {
+        (0..<count).map {
+            let t = Double($0) / 16_000.0
+            return amplitude * Float(sin(2 * Double.pi * f0 * t))
+        }
+    }
+
+    func testMarineSalienceDetectsVoiceFundamental() {
+        var marine = MarineSalience()
+        let s = marine.ingest(harmonicVoice(amplitude: 0.5, f0: 200))
+        XCTAssertGreaterThan(s, 0.05)
+        XCTAssertEqual(marine.estimatedF0(sampleRate: 16_000), 200.0, accuracy: 15.0)
+    }
+
+    func testDynamicEqualizerMaxSplitRoutingAndWupzFold() {
+        var eq = DynamicEqualizer(maxVolume: true)
+        let frame1 = eq.ingest(harmonicVoice(amplitude: 0.4, f0: 180))
+        XCTAssertEqual(frame1.splitEar.leftJackVolume, 1.0)
+        XCTAssertEqual(frame1.splitEar.leftJackPan, 0.0)
+        XCTAssertEqual(frame1.splitEar.rightAirPodsLeftCh, 0.0)
+        XCTAssertEqual(frame1.splitEar.rightAirPodsRightCh, 1.0)
+        XCTAssertTrue(frame1.emotion.hex.hasPrefix("qt:"))
+        XCTAssertEqual(frame1.frameBytes.count, WupzFrame.frameByteCount)
+        XCTAssertGreaterThan(frame1.wupzByteDiff, 0)
+        XCTAssertGreaterThan(frame1.wupzPopcount, 0)
+
+        // Converge LTC state on identical input -> wupzByteDiff drops to 0 (no-op hardware write)
+        var last = frame1
+        for _ in 0..<40 {
+            last = eq.ingest(harmonicVoice(amplitude: 0.4, f0: 180))
+        }
+        XCTAssertEqual(last.wupzByteDiff, 0)
+        XCTAssertFalse(last.requiresHardwareUpdate)
+    }
+}
+

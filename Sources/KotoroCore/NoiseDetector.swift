@@ -39,7 +39,7 @@ public struct NoiseProfile: Equatable, Sendable {
 
 /// Accumulates a running noise profile from PCM buffers. Deterministic and
 /// dependency-free, so it is unit-testable without a microphone.
-public struct NoiseDetector {
+public struct NoiseDetector: Sendable {
     /// Smoothing for the running RMS (0…1; higher forgets the past faster).
     public var smoothing: Float
     private var smoothedPower: Float = 0
