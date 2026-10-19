@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 ### Fixed
+- The Mac bundle script now fails visibly when ad-hoc signing or strict
+  signature verification fails, and reports success only after both pass.
 - Marine pitch tracking now preserves timing across audio frames and reacquires
   the fundamental after silence instead of retaining stale peak positions.
 - `QuantTern.encode` now honors the caller's threshold for all three VAD

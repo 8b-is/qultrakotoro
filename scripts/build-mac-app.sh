@@ -69,7 +69,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# --- ad-hoc sign so Gatekeeper/launchd are happy ---------------------------
-codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+# --- ad-hoc sign and verify the assembled local bundle --------------------
+codesign --force --deep --sign - "$APP"
+codesign --verify --deep --strict "$APP"
 
 echo "built $APP"
