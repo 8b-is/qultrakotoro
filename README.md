@@ -10,7 +10,7 @@
 [![CI](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml/badge.svg)](https://github.com/8b-is/qultrakotoro/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-b8is?style=flat)](CONTRIBUTING.md)
-[![semver](https://img.shields.io/badge/version-0.6.0-9dff5c)](CHANGELOG.md)
+[![semver](https://img.shields.io/badge/version-0.7.0-9dff5c)](CHANGELOG.md)
 
 </div>
 
@@ -157,8 +157,8 @@ See [PRIVACY.md](PRIVACY.md). In one line: **speech requests require an availabl
 
 ## Versioning
 
-[Semantic Versioning](https://semver.org). The current version is **0.6.0** — see
-[CHANGELOG.md](CHANGELOG.md). Releases are tagged `v0.6.0`.
+[Semantic Versioning](https://semver.org). The current version is **0.7.0** — see
+[CHANGELOG.md](CHANGELOG.md). Releases are tagged `v0.7.0`.
 
 ## Roadmap
 

@@ -1,0 +1,30 @@
+[package]
+name = "qultrakotoro"
+version = "0.7.0"
+edition = "2021"
+authors = [
+    "Peter Lodri <peter@vaked.dev>",
+    "Hue (Christopher Chenoweth) <c@8b.is>",
+    "Alexandra Chenoweth <a@8b.is>",
+    "Aye & Gemini <g@8b.is>",
+]
+description = "qUltraKotoro — superwhisper on steroids — 100% Pure-Rust Zero-Float on-device STT, QuantTern emotional ternary code (qt:), Marine Salience, NoiseDetector, and 5-Band LTC Dynamic Environment Equalizer"
+license = "Apache-2.0"
+repository = "https://github.com/8b-is/qultrakotoro"
+default-run = "kotorocli"
+
+[lib]
+name = "qultrakotoro"
+path = "src/lib.rs"
+
+[[bin]]
+name = "kotorocli"
+path = "src/main.rs"
+
+[dependencies]
+# Zero external dependencies! 100% Pure-Rust stdlib + Strict 8b-is Zero-Float p/q Rational Law.
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

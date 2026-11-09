@@ -3,7 +3,15 @@
 All notable changes to qUltraKotoro are documented here.
 This project adheres to [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [0.7.0] — 2026-11-09
+
+### Added
+- **100% Pure-Rust Zero-Float `qultrakotoro` (`kotorocli`) engine (`Cargo.toml`, `src/lib.rs`, `src/main.rs`)**:
+  exact `p/q` rational arithmetic (`RationalPq`), `QuantTern` (`qt:xx`) emotional ternary tagging,
+  `NoiseDetector`, $O(1)$ peak-to-peak `MarineSalience` pitch tracker, 5-band LTC `DynamicEqualizer`
+  with split-ear routing and 32-byte `WupzFrame` witness folding, pure-integer 16kHz PCM resampler,
+  and multi-tier on-device STT (`127.0.0.1:8785` hot `ggml-large-v3-turbo-q5_0.bin`, `127.0.0.1:8786`
+  `liquid-rust`, and local `whisper-cli`).
 
 ### Fixed
 - The Mac bundle script now fails visibly when ad-hoc signing or strict
@@ -12,6 +20,9 @@ This project adheres to [Semantic Versioning](https://semver.org).
   the fundamental after silence instead of retaining stale peak positions.
 - `QuantTern.encode` now honors the caller's threshold for all three VAD
   components. Default threshold behavior and packed output remain unchanged.
+
+### Changed
+- `KotoroAppInfo.version` → `0.7.0`.
 
 ## [0.6.0] — 2026-10-09
 
